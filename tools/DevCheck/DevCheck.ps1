@@ -809,6 +809,11 @@ function Repair-DevTestPfx
 
     # Convert back to plaintext. This is not secure but this cert is only use for development purposes.
     # Do not use for production purposes.
+
+    # Below convertion fixes error: 
+    #     Cannot convert argument "s", with value: "...", for "SecureStringToBSTR" to type "System.Security.SecureString"
+    $password = ConvertTo-SecureString "$password" -AsPlainText -Force
+
     $BSTR = [System.Runtime.InteropServices.Marshal]::SecureStringToBSTR($password)
     $passwordPlainText = [System.Runtime.InteropServices.Marshal]::PtrToStringAuto($BSTR)
     [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($BSTR)
