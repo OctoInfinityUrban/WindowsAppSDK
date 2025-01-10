@@ -128,7 +128,24 @@ namespace PickerCommon {
     {
         wil::unique_cotaskmem_string filePath;
         check_hresult(shellItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath));
-        co_return co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(filePath.get());
+
+        co_await winrt::resume_background();
+
+        auto pathStr = filePath.get();
+        std::error_code ec;
+        if (std::filesystem::exists(pathStr, ec))
+        {
+            co_return co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(pathStr);
+        }
+        else
+        {
+            auto folderPath = std::filesystem::path(pathStr).parent_path().wstring();
+            auto fileName   = std::filesystem::path(pathStr).filename().wstring();
+
+            // Open the parent folder and create the file if it doesn't exist
+            auto folder = co_await winrt::Windows::Storage::StorageFolder::GetFolderFromPathAsync(folderPath);
+            co_return co_await folder.CreateFileAsync(fileName, winrt::Windows::Storage::CreationCollisionOption::OpenIfExists);
+        }
     }
 
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFolder> CreateStorageFolderFromShellItem(winrt::com_ptr<IShellItem> shellItem)
