@@ -2,6 +2,12 @@
 #include "PickerCommon.h"
 #include <wil/resource.h>
 #include "ShObjIdl.h"
+#include <shlobj.h>
+#include <shlwapi.h>
+#include <shobjidl_core.h>
+#include <atlbase.h>
+#include <string>
+#include <winrt/base.h>
 #include <KnownFolders.h>
 
 namespace {
@@ -122,30 +128,45 @@ namespace PickerCommon {
         return value.empty();
     }
 
-
     // TODO: better way to convert ShellItem a StorageFile without relying on path?.
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> CreateStorageFileFromShellItem(winrt::com_ptr<IShellItem> shellItem)
     {
         wil::unique_cotaskmem_string filePath;
         check_hresult(shellItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath));
+        auto pathStr = filePath.get();
+
+        // Check ShellItem attributes to see if it's an actual file on disk
+        SFGAOF desiredAttributes = SFGAO_FILESYSTEM | SFGAO_STREAM;
+        SFGAOF shellItemAttributes = 0;
+        check_hresult(shellItem->GetAttributes(desiredAttributes, &shellItemAttributes));
 
         co_await winrt::resume_background();
 
-        auto pathStr = filePath.get();
-        std::error_code ec;
-        if (std::filesystem::exists(pathStr, ec))
+        if (!(shellItemAttributes & SFGAO_FILESYSTEM) || !(shellItemAttributes & SFGAO_STREAM))
         {
-            co_return co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(pathStr);
-        }
-        else
-        {
-            auto folderPath = std::filesystem::path(pathStr).parent_path().wstring();
-            auto fileName   = std::filesystem::path(pathStr).filename().wstring();
+            winrt::com_ptr<IShellItem> pParentFolder;
+            check_hresult(shellItem->GetParent(pParentFolder.put()));
 
-            // Open the parent folder and create the file if it doesn't exist
-            auto folder = co_await winrt::Windows::Storage::StorageFolder::GetFolderFromPathAsync(folderPath);
-            co_return co_await folder.CreateFileAsync(fileName, winrt::Windows::Storage::CreationCollisionOption::OpenIfExists);
+            winrt::com_ptr<IShellFolder> pShellFolder;
+            check_hresult(pParentFolder->BindToHandler(nullptr, BHID_SFObject, IID_PPV_ARGS(pShellFolder.put())));
+
+            // Get the file name.
+            wil::unique_cotaskmem_string fileNameObj;
+            check_hresult(shellItem->GetDisplayName(SIGDN_NORMALDISPLAY, &fileNameObj));
+            auto fileName = fileNameObj.get();
+
+            // The file doesn't exist, create file.
+            winrt::com_ptr<IStorage> pStorage;
+            check_hresult(pShellFolder->CreateViewObject(NULL, IID_PPV_ARGS(&pStorage)));
+
+            winrt::com_ptr<IStream> pStream;
+            check_hresult(pStorage->CreateStream(fileName, STGM_CREATE | STGM_WRITE | STGM_SHARE_EXCLUSIVE, 0, 0, pStream.put()));
+
+            // Close the stream to finalize the file creation
+            pStream = nullptr;
         }
+
+        co_return co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(pathStr);
     }
 
     winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFolder> CreateStorageFolderFromShellItem(winrt::com_ptr<IShellItem> shellItem)
