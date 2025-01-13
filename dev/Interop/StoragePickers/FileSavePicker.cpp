@@ -126,12 +126,27 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
 
         winrt::com_ptr<IShellItem> shellItem{};
         check_hresult(dialog->GetResult(shellItem.put()));
-        auto file = co_await PickerCommon::CreateStorageFileFromShellItem(shellItem);
 
         if (cancellationToken())
         {
             co_return nullptr;
         }
-        co_return file;
+
+        // Get the selected file path
+        PWSTR pszFilePath = nullptr;
+        check_hresult(shellItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath));
+        wil::unique_cotaskmem_string uniqueFilePath{ pszFilePath };
+
+        // Create the file
+        HANDLE hFile = CreateFile(uniqueFilePath.get(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+        if (hFile == INVALID_HANDLE_VALUE)
+        {
+            co_return nullptr;
+        }
+        CloseHandle(hFile);
+
+        // Get the StorageFile
+        auto storageFile = co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(uniqueFilePath.get());
+        co_return storageFile;
     }
 }
