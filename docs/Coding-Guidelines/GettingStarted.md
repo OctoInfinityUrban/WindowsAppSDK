@@ -43,6 +43,7 @@ or via the browser:
       * MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)
       * MSVC v143 - VS 2022 C++ ARM64 Spectre-mitigated libs (Latest)
       * MSVC v143 - VS 2022 C++ x64/x86 Spectre-mitigated libs (Latest)
+      * C++ ATL for latest v143 build tools with Spectre Mitigations (x86 & x64)
       * Windows Universal CRT SDK
       * C# and Visual Basic
       * C++ core features
