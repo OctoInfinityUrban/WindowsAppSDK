@@ -129,72 +129,20 @@ namespace PickerCommon {
     }
 
     // TODO: better way to convert ShellItem a StorageFile without relying on path?.
-    winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> CreateStorageFileFromShellItem(winrt::com_ptr<IShellItem> shellItem)
+    winrt::Windows::Foundation::IAsyncOperation<winrt::Windows::Storage::StorageFile> CreateStorageFileFromShellItem(winrt::com_ptr<IShellItem> shellItem, bool createFile)
     {
         wil::unique_cotaskmem_string filePath;
         check_hresult(shellItem->GetDisplayName(SIGDN_FILESYSPATH, &filePath));
         auto pathStr = filePath.get();
 
-        // Check ShellItem attributes to see if it's an actual file on disk
-        SFGAOF desiredAttributes = SFGAO_FILESYSTEM | SFGAO_STREAM;
-        SFGAOF shellItemAttributes = 0;
-        check_hresult(shellItem->GetAttributes(desiredAttributes, &shellItemAttributes));
-
-        co_await winrt::resume_background();
-
-        if (desiredAttributes != shellItemAttributes)
+        if (createFile)
         {
-            // Get the parent folder
-            winrt::com_ptr<IShellItem> pParentFolder;
-            check_hresult(shellItem->GetParent(pParentFolder.put()));
-
-            // Get the IShellFolder interface for the parent folder
-            winrt::com_ptr<IShellFolder> pShellFolder;
-            check_hresult(pParentFolder->BindToHandler(nullptr, BHID_SFObject, IID_PPV_ARGS(pShellFolder.put())));
-
-            // Get the file name
-            wil::unique_cotaskmem_string fileNameObj;
-            check_hresult(shellItem->GetDisplayName(SIGDN_NORMALDISPLAY, &fileNameObj));
-            auto fileName = fileNameObj.get();
-
-            /*----------------------------------------*/
-
-            //// Create the file using SHCreateItemFromParsingName
-            //winrt::com_ptr<IShellItem> newShellItem;
-            //check_hresult(SHCreateItemFromParsingName(pathStr, nullptr, IID_PPV_ARGS(newShellItem.put())));
-
-            // Use IStorage to create the file
-            winrt::com_ptr<IStorage> pStorage;
-            check_hresult(pShellFolder->CreateViewObject(nullptr, IID_PPV_ARGS(&pStorage)));
-
-            winrt::com_ptr<IStream> pStream;
-            check_hresult(pStorage->CreateStream(fileName, STGM_CREATE | STGM_WRITE | STGM_SHARE_EXCLUSIVE, 0, 0, pStream.put()));
-
-            // Close the stream to finalize the file creation
-            pStream = nullptr;
-
-            /*--------------------------*/
-            // // Create IFileOperation instance
-            // winrt::com_ptr<IFileOperation> pFileOperation;
-            // check_hresult(CoCreateInstance(CLSID_FileOperation, NULL, CLSCTX_ALL, IID_PPV_ARGS(&pFileOperation)));
-
-            // // Set operation flags
-            // check_hresult(pFileOperation->SetOperationFlags(FOF_NOCONFIRMATION | FOF_SILENT));
-
-            // // Create IShellItem for the destination folder
-            // winrt::com_ptr<IShellItem> pDestinationFolder = pParentFolder;
-            // //check_hresult(SHCreateItemFromParsingName(L"C:\\path\\to\\your\\folder", NULL, IID_PPV_ARGS(&pDestinationFolder)));
-
-            // // Create the new file
-            // winrt::com_ptr<IShellItem> pNewFile;
-            // check_hresult(pFileOperation->NewItem(pDestinationFolder.get(), FILE_ATTRIBUTE_NORMAL, pathStr, NULL, pNewFile.put()));
-
-            // // Perform the operation
-            // check_hresult(pFileOperation->PerformOperations());
-            /*--------------------------*/
-
-            //auto folder = co_await winrt::Windows::Storage::StorageFolder::GetFolderFromPathAsync(folderPath);
-            //co_return co_await folder.CreateFileAsync(fileName, winrt::Windows::Storage::CreationCollisionOption::OpenIfExists);
+            HANDLE hFile = CreateFile(pathStr, GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
+            if (hFile == INVALID_HANDLE_VALUE)
+            {
+                co_return nullptr;
+            }
+            CloseHandle(hFile);
         }
 
         co_return co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(pathStr);

@@ -105,10 +105,12 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         {
             check_hresult(dialog->SetDefaultExtension(defaultFileExtension.c_str()));
         }
+
         if (!PickerCommon::IsHStringNullOrEmpty(suggestedFileName))
         {
             check_hresult(dialog->SetFileName(suggestedFileName.c_str()));
         }
+
         if (suggestedSaveFile != nullptr)
         {
             winrt::com_ptr<IShellItem> shellItem;
@@ -127,26 +129,14 @@ namespace winrt::Microsoft::Windows::Storage::Pickers::implementation
         winrt::com_ptr<IShellItem> shellItem{};
         check_hresult(dialog->GetResult(shellItem.put()));
 
+        // TODO: Manually append the default extension if not present
+
+        auto file = co_await PickerCommon::CreateStorageFileFromShellItem(shellItem, true);
+
         if (cancellationToken())
         {
             co_return nullptr;
         }
-
-        // Get the selected file path
-        PWSTR pszFilePath = nullptr;
-        check_hresult(shellItem->GetDisplayName(SIGDN_FILESYSPATH, &pszFilePath));
-        wil::unique_cotaskmem_string uniqueFilePath{ pszFilePath };
-
-        // Create the file
-        HANDLE hFile = CreateFile(uniqueFilePath.get(), GENERIC_WRITE, 0, nullptr, CREATE_ALWAYS, FILE_ATTRIBUTE_NORMAL, nullptr);
-        if (hFile == INVALID_HANDLE_VALUE)
-        {
-            co_return nullptr;
-        }
-        CloseHandle(hFile);
-
-        // Get the StorageFile
-        auto storageFile = co_await winrt::Windows::Storage::StorageFile::GetFileFromPathAsync(uniqueFilePath.get());
-        co_return storageFile;
+        co_return file;
     }
 }
