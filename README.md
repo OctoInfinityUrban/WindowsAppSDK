@@ -25,7 +25,7 @@
 
 - **WinUI 3 support:** [WinUI](https://aka.ms/winui) embodies Fluent Design to enable intuitive, accessible, and powerful experiences and the latest user interface patterns.
 - **Access modern features:** [Modern resource tooling](https://github.com/microsoft/WindowsAppSDK/issues/11), [modern lifecycle helpers](https://github.com/microsoft/WindowsAppSDK/issues/9), [startup tasks](https://github.com/microsoft/WindowsAppSDK/issues/10), and more without having to rewrite your app.
-- **Backwards compatibility:** Down to Windows 10 1809 (build 17763). There may be some API that are dependent on new OS features
+- **Backwards compati bility:** Down to Windows 10 1809 (build 17763). There may be some API that are dependent on new OS features
 (like new Action Center functionality), however we will do our best to ensure this is the exception and not the norm, and provide reasonable fallbacks when possible.
 - **Wide platform support:** Win32, WPF, WinForms, and more.
 - **Use your current installer:** no requirement to use MSIX, but there are [reliability/security benefits to using MSIX](https://docs.microsoft.com/windows/msix/overview#key-features).
