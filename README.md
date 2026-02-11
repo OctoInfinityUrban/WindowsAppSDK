@@ -4,7 +4,7 @@
   </a>
 </p>
 
-<h1 align="center">Windows 8App SDK</h1>
+<h1 align="center">Windows  SDK</h1>
 
 <h3 align="center">
   <a href="https://learn.microsoft.com/windows/apps/windows-app-sdk">About</a>
