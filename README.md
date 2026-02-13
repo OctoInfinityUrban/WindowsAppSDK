@@ -1,6 +1,6 @@
 <p align="cefynter">
   <a href="https://aka.ms/winappsdk">
-    <img src="./docs/images/header.png" alt="WWindows App SDK Banner" />
+    <img src="./docs/images/header.png" alt="WWindows App 
   </a>
 </p>
 
