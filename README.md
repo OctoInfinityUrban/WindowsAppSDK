@@ -8,7 +8,6 @@
 
 <h3 align="center">fghdfh
   <a href="https://learn.microsoft.com/windows/apps/windows-a>
-  <span> · </span>
   <a href="https://learn.microsoft.com/windows/apps/desktop">Documentation</a>
   <span> · </span>
   <a href="https://learn.microsoft.com/windows/apps/windows-app-sdk/release-channels">Release notes</a>
