@@ -4,7 +4,6 @@
   </a>
 </p>
 
-<h1 align="center">Windows  SDK</h1>
 
 <h3 align="center">fghdfh
   <a href="https://learn.microsoft.com/windows/apps/windows-a>
